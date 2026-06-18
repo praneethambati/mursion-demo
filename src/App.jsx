@@ -63,6 +63,148 @@ const SCENARIOS = {
   },
 };
 
+// ── Cartoon avatar ─────────────────────────────────────────────────────────────
+function CartoonAvatar({ scenarioId, agentSpeaking, turnIndex }) {
+  const mouthClass = agentSpeaking ? "ca-mouth ca-mouth-talk" : "ca-mouth";
+
+  if (scenarioId === "classroom") {
+    const grumpy = turnIndex < 2;
+    const soft   = turnIndex >= 4;
+    return (
+      <>
+        <style>{`
+          .ca-svg { width: 100%; max-width: 160px; height: auto; display: block; }
+          .ca-eyelid { transform-origin: center; transform-box: fill-box; animation: caBlink 3s infinite; }
+          .ca-eyelid-r { animation-delay: 0.05s; }
+          @keyframes caBlink {
+            0%, 96%, 100% { transform: scaleY(0); }
+            98% { transform: scaleY(1); }
+          }
+          .ca-mouth { transform-origin: center; transform-box: fill-box; }
+          .ca-mouth-talk { animation: caMouthTalk 0.32s ease-in-out infinite; }
+          @keyframes caMouthTalk {
+            0%, 100% { transform: scaleY(0.35); }
+            50% { transform: scaleY(1.1); }
+          }
+        `}</style>
+        <svg className="ca-svg" viewBox="0 0 120 140" fill="none" xmlns="http://www.w3.org/2000/svg">
+          {/* shirt */}
+          <path d="M20 118 Q60 108 100 118 L108 140 L12 140 Z" fill="#4A6FA5" />
+          {/* hair — messy black */}
+          <ellipse cx="60" cy="42" rx="46" ry="38" fill="#1A1A1A" />
+          <path d="M18 48 Q28 18 60 14 Q92 18 102 48 Q88 28 60 26 Q32 28 18 48Z" fill="#1A1A1A" />
+          <path d="M22 40 Q35 22 48 30 M72 30 Q85 22 98 40" stroke="#2A2A2A" strokeWidth="3" strokeLinecap="round" />
+          {/* face — round chubby */}
+          <ellipse cx="60" cy="72" rx="40" ry="38" fill="#F5C99A" />
+          {/* cheeks */}
+          <ellipse cx="32" cy="80" rx="10" ry="7" fill="#E8A87C" opacity="0.55" />
+          <ellipse cx="88" cy="80" rx="10" ry="7" fill="#E8A87C" opacity="0.55" />
+          {/* eyebrows — thick, grumpy → soft */}
+          {grumpy ? (
+            <>
+              <path d="M34 58 L50 64" stroke="#1A1A1A" strokeWidth="4" strokeLinecap="round" />
+              <path d="M86 58 L70 64" stroke="#1A1A1A" strokeWidth="4" strokeLinecap="round" />
+            </>
+          ) : soft ? (
+            <>
+              <path d="M36 60 Q44 56 52 60" stroke="#1A1A1A" strokeWidth="3.5" strokeLinecap="round" fill="none" />
+              <path d="M84 60 Q76 56 68 60" stroke="#1A1A1A" strokeWidth="3.5" strokeLinecap="round" fill="none" />
+            </>
+          ) : (
+            <>
+              <path d="M34 60 L52 60" stroke="#1A1A1A" strokeWidth="3.5" strokeLinecap="round" />
+              <path d="M86 60 L68 60" stroke="#1A1A1A" strokeWidth="3.5" strokeLinecap="round" />
+            </>
+          )}
+          {/* eyes — large round */}
+          <ellipse cx="44" cy="72" rx="11" ry="12" fill="#FFFFFF" />
+          <ellipse cx="76" cy="72" rx="11" ry="12" fill="#FFFFFF" />
+          <circle cx="46" cy="74" r="6" fill="#2C1810" />
+          <circle cx="78" cy="74" r="6" fill="#2C1810" />
+          <circle cx="48" cy="71" r="2" fill="#FFFFFF" />
+          <circle cx="80" cy="71" r="2" fill="#FFFFFF" />
+          {/* eyelids */}
+          <ellipse className="ca-eyelid" cx="44" cy="72" rx="12" ry="13" fill="#F5C99A" />
+          <ellipse className="ca-eyelid ca-eyelid-r" cx="76" cy="72" rx="12" ry="13" fill="#F5C99A" />
+          {/* nose */}
+          <ellipse cx="60" cy="84" rx="5" ry="4" fill="#E8A87C" />
+          {/* mouth */}
+          <g className={mouthClass} transform="translate(60, 96)">
+            {grumpy && !agentSpeaking ? (
+              <path d="M-12 0 Q0 -6 12 0" stroke="#8B4513" strokeWidth="3" strokeLinecap="round" fill="none" />
+            ) : soft && !agentSpeaking ? (
+              <path d="M-12 2 Q0 12 12 2" stroke="#8B4513" strokeWidth="3" strokeLinecap="round" fill="none" />
+            ) : (
+              <ellipse cx="0" cy="0" rx="13" ry="5" fill="#8B4513" />
+            )}
+          </g>
+        </svg>
+      </>
+    );
+  }
+
+  // Jordan — performance / tired office worker
+  const tense = turnIndex < 3;
+  return (
+    <>
+      <style>{`
+        .ca-svg { width: 100%; max-width: 160px; height: auto; display: block; }
+        .ca-eyelid { transform-origin: center; transform-box: fill-box; animation: caBlink 3s infinite; }
+        .ca-eyelid-r { animation-delay: 0.05s; }
+        @keyframes caBlink {
+          0%, 96%, 100% { transform: scaleY(0); }
+          98% { transform: scaleY(1); }
+        }
+        .ca-mouth { transform-origin: center; transform-box: fill-box; }
+        .ca-mouth-talk { animation: caMouthTalk 0.32s ease-in-out infinite; }
+        @keyframes caMouthTalk {
+          0%, 100% { transform: scaleY(0.35); }
+          50% { transform: scaleY(1.1); }
+        }
+      `}</style>
+      <svg className="ca-svg" viewBox="0 0 120 140" fill="none" xmlns="http://www.w3.org/2000/svg">
+        {/* collared shirt */}
+        <path d="M18 115 L42 100 L60 108 L78 100 L102 115 L108 140 L12 140 Z" fill="#3D4F5F" />
+        <path d="M42 100 L60 108 L78 100" stroke="#2C3A47" strokeWidth="2" fill="none" />
+        <path d="M60 108 L60 140" stroke="#2C3A47" strokeWidth="1.5" />
+        {/* neck */}
+        <rect x="48" y="102" width="24" height="16" fill="#E8C4A8" />
+        {/* hair — short */}
+        <ellipse cx="60" cy="48" rx="34" ry="28" fill="#4A3728" />
+        <path d="M28 52 Q30 28 60 26 Q90 28 92 52" fill="#4A3728" />
+        {/* face — oval */}
+        <ellipse cx="60" cy="72" rx="32" ry="36" fill="#E8C4A8" />
+        {/* bags under eyes */}
+        <ellipse cx="44" cy="80" rx="10" ry="5" fill="#C9A882" opacity="0.7" />
+        <ellipse cx="76" cy="80" rx="10" ry="5" fill="#C9A882" opacity="0.7" />
+        {/* worried eyebrows */}
+        <path d={tense ? "M32 56 L48 62" : "M34 58 L50 58"} stroke="#4A3728" strokeWidth="3" strokeLinecap="round" fill="none" />
+        <path d={tense ? "M88 56 L72 62" : "M86 58 L70 58"} stroke="#4A3728" strokeWidth="3" strokeLinecap="round" fill="none" />
+        {/* eyes — tired */}
+        <ellipse cx="44" cy="72" rx="9" ry="10" fill="#FFFFFF" />
+        <ellipse cx="76" cy="72" rx="9" ry="10" fill="#FFFFFF" />
+        <circle cx="45" cy="74" r="5" fill="#2C1810" />
+        <circle cx="77" cy="74" r="5" fill="#2C1810" />
+        {/* eyelids */}
+        <ellipse className="ca-eyelid" cx="44" cy="72" rx="10" ry="11" fill="#E8C4A8" />
+        <ellipse className="ca-eyelid ca-eyelid-r" cx="76" cy="72" rx="10" ry="11" fill="#E8C4A8" />
+        {/* nervous sweat */}
+        {tense && <path d="M98 58 Q100 64 96 68 Q102 64 98 58Z" fill="#7EB8DA" opacity="0.8" />}
+        {/* mouth — tense line or talking */}
+        <g className={mouthClass} transform="translate(60, 94)">
+          {tense && !agentSpeaking ? (
+            <path d="M-10 0 L10 0" stroke="#8B6914" strokeWidth="2.5" strokeLinecap="round" />
+          ) : !agentSpeaking ? (
+            <path d="M-10 2 Q0 8 10 2" stroke="#8B6914" strokeWidth="2.5" strokeLinecap="round" fill="none" />
+          ) : (
+            <ellipse cx="0" cy="0" rx="11" ry="5" fill="#8B6914" />
+          )}
+        </g>
+      </svg>
+    </>
+  );
+}
+
 // ── EEG line ───────────────────────────────────────────────────────────────────
 function EEGLine({ active }) {
   const canvasRef = useRef(null);
@@ -711,17 +853,10 @@ export default function SimulationRoom() {
         <div className="sim-videos" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, flex: 1, minHeight: 0 }}>
 
           {/* Avatar */}
-          <div style={{ background: T.surface, borderRadius: 12, border: `1px solid ${agentSpeaking ? T.borderHi : T.border}`, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", position: "relative", transition: "border-color 0.3s", minHeight: 190 }}>
-            <div style={{ width: 68, height: 68, borderRadius: "50%", background: T.raised, border: `1px solid ${agentSpeaking ? T.borderHi : T.border}`, display: "flex", alignItems: "center", justifyContent: "center", fontFamily: "'DM Sans', sans-serif", fontSize: 26, fontWeight: 700, color: T.textPri, transition: "border-color 0.3s" }}>
-              {scenario?.avatarInitial}
+          <div style={{ background: T.surface, borderRadius: 12, border: `1px solid ${agentSpeaking ? T.borderHi : T.border}`, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", position: "relative", transition: "border-color 0.3s", minHeight: 190, overflow: "hidden" }}>
+            <div style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", width: "100%", padding: "16px 20px 52px" }}>
+              <CartoonAvatar scenarioId={scenario?.id} agentSpeaking={agentSpeaking} turnIndex={turnIndex} />
             </div>
-            {agentSpeaking && (
-              <div style={{ display: "flex", gap: 3, marginTop: 12 }}>
-                {[0,1,2,3,4].map(i => (
-                  <div key={i} style={{ width: 2, borderRadius: 1, background: T.textSec, animation: `blink 0.65s ${i*0.13}s infinite`, height: `${6+(i%3)*4}px` }} />
-                ))}
-              </div>
-            )}
             <div style={{ position: "absolute", bottom: 12, left: 14, right: 14, display: "flex", justifyContent: "space-between", alignItems: "flex-end" }}>
               <div>
                 <div style={{ fontSize: 12, color: T.textPri, fontWeight: 500 }}>{scenario?.avatarName}</div>
