@@ -325,6 +325,10 @@ export default function SimulationRoom() {
   const expectingUserRef = useRef(false);
   const submittingRef    = useRef(false);
   const submitTurnRef    = useRef(null);
+  const silenceTimerRef  = useRef(null);
+  const pendingSpeechRef = useRef("");
+
+  const SILENCE_MS = 3000; // wait 3s of silence before auto-submit
 
   // detect speech support once on mount + preload TTS voices (Chrome)
   useEffect(() => {
@@ -375,8 +379,28 @@ export default function SimulationRoom() {
   }, [cameraOn]);
 
   // ── Speech recognition ─────────────────────────────────────────────────────
+  const clearSilenceTimer = useCallback(() => {
+    if (silenceTimerRef.current) {
+      clearTimeout(silenceTimerRef.current);
+      silenceTimerRef.current = null;
+    }
+  }, []);
+
+  const scheduleAutoSubmit = useCallback((transcript) => {
+    clearSilenceTimer();
+    if (!transcript.trim() || !expectingUserRef.current || submittingRef.current) return;
+    pendingSpeechRef.current = transcript;
+    silenceTimerRef.current = setTimeout(() => {
+      if (expectingUserRef.current && !submittingRef.current && pendingSpeechRef.current.trim()) {
+        submitTurnRef.current?.(pendingSpeechRef.current);
+      }
+    }, SILENCE_MS);
+  }, [clearSilenceTimer]);
+
   const startListening = useCallback(() => {
     expectingUserRef.current = true;
+    pendingSpeechRef.current = "";
+    clearSilenceTimer();
     setUserSpeech("");
     if (typingMode) { setListening(true); return; }
     const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
@@ -389,10 +413,7 @@ export default function SimulationRoom() {
       r.onresult = e => {
         const transcript = Array.from(e.results).map(x => x[0].transcript).join("");
         setUserSpeech(transcript);
-        const last = e.results[e.results.length - 1];
-        if (last?.isFinal && transcript.trim()) {
-          submitTurnRef.current?.(transcript);
-        }
+        scheduleAutoSubmit(transcript);
       };
       r.onerror = (e) => {
         if (e.error === "no-speech" || e.error === "aborted") return;
@@ -410,7 +431,7 @@ export default function SimulationRoom() {
       recognRef.current = r;
       setListening(true);
     } catch { setTypingMode(true); setListening(true); }
-  }, [typingMode]);
+  }, [typingMode, clearSilenceTimer, scheduleAutoSubmit]);
 
   // ── Evaluate turn ──────────────────────────────────────────────────────────
   const evaluateTurn = useCallback(async (text, sc) => {
@@ -447,8 +468,10 @@ export default function SimulationRoom() {
   const submitTurn = useCallback(async (overrideText) => {
     const text = (overrideText ?? userSpeech).trim();
     if (!text || !scenario || submittingRef.current) return;
+    clearSilenceTimer();
     submittingRef.current = true;
     expectingUserRef.current = false;
+    pendingSpeechRef.current = "";
     recognRef.current?.stop();
     setUserSpeech("");
     setListening(false);
@@ -465,7 +488,7 @@ export default function SimulationRoom() {
       setProcessing(false);
       submittingRef.current = false;
     }
-  }, [userSpeech, scenario, turnIndex, evaluateTurn, agentRespond]);
+  }, [userSpeech, scenario, turnIndex, evaluateTurn, agentRespond, clearSilenceTimer]);
 
   submitTurnRef.current = submitTurn;
 
@@ -516,9 +539,10 @@ export default function SimulationRoom() {
   useEffect(() => () => {
     clearInterval(timerRef.current);
     clearInterval(emotionRef.current);
+    clearSilenceTimer();
     stopCamera();
     window.speechSynthesis.cancel();
-  }, [stopCamera]);
+  }, [stopCamera, clearSilenceTimer]);
 
   if (generating) return <GeneratingOverlay />;
 
@@ -769,7 +793,7 @@ export default function SimulationRoom() {
                     style={{ background: "transparent", border: "none", outline: "none", resize: "none", fontSize: 13, color: T.textPri, lineHeight: 1.55, minHeight: 52, width: "100%" }}
                   />
                 : <div style={{ fontSize: 13, color: userSpeech ? T.textPri : T.textMut, fontStyle: userSpeech ? "normal" : "italic", lineHeight: 1.55, minHeight: 20 }}>
-                    {userSpeech || "Speak now — your response will be evaluated…"}
+                    {userSpeech || "Speak now — auto-sends after a 3s pause, or click Submit"}
                   </div>
               }
             </div>
