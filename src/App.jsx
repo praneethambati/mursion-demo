@@ -64,6 +64,16 @@ const SCENARIOS = {
 };
 
 // ── Cartoon avatar ─────────────────────────────────────────────────────────────
+const CA_STYLES = `
+  .ca-svg { width: 100%; max-width: 200px; height: auto; display: block; filter: drop-shadow(0 8px 16px rgba(0,0,0,0.45)); }
+  .ca-eyelid { transform-origin: center; transform-box: fill-box; animation: caBlink 3s infinite; }
+  .ca-eyelid-r { animation-delay: 0.05s; }
+  @keyframes caBlink { 0%, 96%, 100% { transform: scaleY(0); } 98% { transform: scaleY(1); } }
+  .ca-mouth { transform-origin: center; transform-box: fill-box; }
+  .ca-mouth-talk { animation: caMouthTalk 0.32s ease-in-out infinite; }
+  @keyframes caMouthTalk { 0%, 100% { transform: scaleY(0.35); } 50% { transform: scaleY(1.15); } }
+`;
+
 function CartoonAvatar({ scenarioId, agentSpeaking, turnIndex }) {
   const mouthClass = agentSpeaking ? "ca-mouth ca-mouth-talk" : "ca-mouth";
 
@@ -72,132 +82,228 @@ function CartoonAvatar({ scenarioId, agentSpeaking, turnIndex }) {
     const soft   = turnIndex >= 4;
     return (
       <>
-        <style>{`
-          .ca-svg { width: 100%; max-width: 160px; height: auto; display: block; }
-          .ca-eyelid { transform-origin: center; transform-box: fill-box; animation: caBlink 3s infinite; }
-          .ca-eyelid-r { animation-delay: 0.05s; }
-          @keyframes caBlink {
-            0%, 96%, 100% { transform: scaleY(0); }
-            98% { transform: scaleY(1); }
-          }
-          .ca-mouth { transform-origin: center; transform-box: fill-box; }
-          .ca-mouth-talk { animation: caMouthTalk 0.32s ease-in-out infinite; }
-          @keyframes caMouthTalk {
-            0%, 100% { transform: scaleY(0.35); }
-            50% { transform: scaleY(1.1); }
-          }
-        `}</style>
-        <svg className="ca-svg" viewBox="0 0 120 140" fill="none" xmlns="http://www.w3.org/2000/svg">
-          {/* shirt */}
-          <path d="M20 118 Q60 108 100 118 L108 140 L12 140 Z" fill="#4A6FA5" />
-          {/* hair — messy black */}
-          <ellipse cx="60" cy="42" rx="46" ry="38" fill="#1A1A1A" />
-          <path d="M18 48 Q28 18 60 14 Q92 18 102 48 Q88 28 60 26 Q32 28 18 48Z" fill="#1A1A1A" />
-          <path d="M22 40 Q35 22 48 30 M72 30 Q85 22 98 40" stroke="#2A2A2A" strokeWidth="3" strokeLinecap="round" />
-          {/* face — round chubby */}
-          <ellipse cx="60" cy="72" rx="40" ry="38" fill="#F5C99A" />
-          {/* cheeks */}
-          <ellipse cx="32" cy="80" rx="10" ry="7" fill="#E8A87C" opacity="0.55" />
-          <ellipse cx="88" cy="80" rx="10" ry="7" fill="#E8A87C" opacity="0.55" />
-          {/* eyebrows — thick, grumpy → soft */}
+        <style>{CA_STYLES}</style>
+        <svg className="ca-svg" viewBox="0 0 140 160" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <defs>
+            <radialGradient id="ethan-skin" cx="42%" cy="35%" r="65%">
+              <stop offset="0%" stopColor="#FFE4C4" />
+              <stop offset="55%" stopColor="#F5C99A" />
+              <stop offset="100%" stopColor="#D4956A" />
+            </radialGradient>
+            <radialGradient id="ethan-cheek" cx="50%" cy="50%" r="50%">
+              <stop offset="0%" stopColor="#FF9E7A" stopOpacity="0.7" />
+              <stop offset="100%" stopColor="#E87850" stopOpacity="0" />
+            </radialGradient>
+            <linearGradient id="ethan-shirt" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stopColor="#FFD54F" />
+              <stop offset="100%" stopColor="#F9A825" />
+            </linearGradient>
+            <linearGradient id="ethan-vest" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stopColor="#EF5350" />
+              <stop offset="100%" stopColor="#C62828" />
+            </linearGradient>
+            <radialGradient id="ethan-hair" cx="50%" cy="30%" r="70%">
+              <stop offset="0%" stopColor="#3D3D3D" />
+              <stop offset="100%" stopColor="#0D0D0D" />
+            </radialGradient>
+            <radialGradient id="ethan-eye" cx="40%" cy="35%" r="60%">
+              <stop offset="0%" stopColor="#FFFFFF" />
+              <stop offset="100%" stopColor="#E0E0E0" />
+            </radialGradient>
+            <radialGradient id="ethan-iris" cx="45%" cy="40%" r="55%">
+              <stop offset="0%" stopColor="#5D4037" />
+              <stop offset="100%" stopColor="#1A0A00" />
+            </radialGradient>
+            <filter id="ethan-soft" x="-20%" y="-20%" width="140%" height="140%">
+              <feDropShadow dx="0" dy="3" stdDeviation="3" floodColor="#000" floodOpacity="0.35" />
+            </filter>
+          </defs>
+
+          {/* body — Motu-style round belly */}
+          <ellipse cx="70" cy="138" rx="48" ry="22" fill="url(#ethan-shirt)" filter="url(#ethan-soft)" />
+          <path d="M28 128 Q70 108 112 128 L118 160 L22 160 Z" fill="url(#ethan-shirt)" />
+          <path d="M38 130 Q70 118 102 130 L106 160 L34 160 Z" fill="url(#ethan-vest)" />
+          <ellipse cx="70" cy="126" rx="22" ry="14" fill="url(#ethan-vest)" opacity="0.85" />
+
+          {/* ears */}
+          <ellipse cx="24" cy="78" rx="9" ry="11" fill="url(#ethan-skin)" />
+          <ellipse cx="116" cy="78" rx="9" ry="11" fill="url(#ethan-skin)" />
+          <ellipse cx="24" cy="78" rx="5" ry="6" fill="#E8A87C" opacity="0.5" />
+          <ellipse cx="116" cy="78" rx="5" ry="6" fill="#E8A87C" opacity="0.5" />
+
+          {/* hair back */}
+          <ellipse cx="70" cy="46" rx="52" ry="42" fill="url(#ethan-hair)" />
+          <path d="M16 54 Q22 14 70 10 Q118 14 124 54 Q108 28 70 24 Q32 28 16 54Z" fill="url(#ethan-hair)" />
+          <ellipse cx="50" cy="28" rx="14" ry="8" fill="#5A5A5A" opacity="0.35" />
+
+          {/* face — very round chubby */}
+          <ellipse cx="70" cy="78" rx="46" ry="44" fill="url(#ethan-skin)" filter="url(#ethan-soft)" />
+          {/* chin / double chin */}
+          <ellipse cx="70" cy="108" rx="28" ry="12" fill="url(#ethan-skin)" />
+          <ellipse cx="70" cy="112" rx="20" ry="7" fill="#D4956A" opacity="0.35" />
+
+          {/* cheek blush */}
+          <ellipse cx="34" cy="88" rx="14" ry="10" fill="url(#ethan-cheek)" />
+          <ellipse cx="106" cy="88" rx="14" ry="10" fill="url(#ethan-cheek)" />
+
+          {/* forehead highlight */}
+          <ellipse cx="58" cy="58" rx="18" ry="10" fill="#FFFFFF" opacity="0.22" />
+
+          {/* eyebrows */}
           {grumpy ? (
             <>
-              <path d="M34 58 L50 64" stroke="#1A1A1A" strokeWidth="4" strokeLinecap="round" />
-              <path d="M86 58 L70 64" stroke="#1A1A1A" strokeWidth="4" strokeLinecap="round" />
+              <path d="M38 62 L56 70" stroke="#1A1A1A" strokeWidth="5" strokeLinecap="round" />
+              <path d="M102 62 L84 70" stroke="#1A1A1A" strokeWidth="5" strokeLinecap="round" />
             </>
           ) : soft ? (
             <>
-              <path d="M36 60 Q44 56 52 60" stroke="#1A1A1A" strokeWidth="3.5" strokeLinecap="round" fill="none" />
-              <path d="M84 60 Q76 56 68 60" stroke="#1A1A1A" strokeWidth="3.5" strokeLinecap="round" fill="none" />
+              <path d="M40 64 Q50 58 60 64" stroke="#1A1A1A" strokeWidth="4" strokeLinecap="round" fill="none" />
+              <path d="M100 64 Q90 58 80 64" stroke="#1A1A1A" strokeWidth="4" strokeLinecap="round" fill="none" />
             </>
           ) : (
             <>
-              <path d="M34 60 L52 60" stroke="#1A1A1A" strokeWidth="3.5" strokeLinecap="round" />
-              <path d="M86 60 L68 60" stroke="#1A1A1A" strokeWidth="3.5" strokeLinecap="round" />
+              <path d="M38 66 L60 66" stroke="#1A1A1A" strokeWidth="4.5" strokeLinecap="round" />
+              <path d="M102 66 L80 66" stroke="#1A1A1A" strokeWidth="4.5" strokeLinecap="round" />
             </>
           )}
-          {/* eyes — large round */}
-          <ellipse cx="44" cy="72" rx="11" ry="12" fill="#FFFFFF" />
-          <ellipse cx="76" cy="72" rx="11" ry="12" fill="#FFFFFF" />
-          <circle cx="46" cy="74" r="6" fill="#2C1810" />
-          <circle cx="78" cy="74" r="6" fill="#2C1810" />
-          <circle cx="48" cy="71" r="2" fill="#FFFFFF" />
-          <circle cx="80" cy="71" r="2" fill="#FFFFFF" />
+
+          {/* eyes — big 3D */}
+          <ellipse cx="50" cy="78" rx="14" ry="15" fill="url(#ethan-eye)" />
+          <ellipse cx="90" cy="78" rx="14" ry="15" fill="url(#ethan-eye)" />
+          <ellipse cx="50" cy="78" rx="14" ry="15" fill="none" stroke="#C4A882" strokeWidth="0.8" opacity="0.5" />
+          <ellipse cx="90" cy="78" rx="14" ry="15" fill="none" stroke="#C4A882" strokeWidth="0.8" opacity="0.5" />
+          <circle cx="52" cy="80" r="7.5" fill="url(#ethan-iris)" />
+          <circle cx="92" cy="80" r="7.5" fill="url(#ethan-iris)" />
+          <circle cx="54" cy="76" r="3" fill="#FFFFFF" opacity="0.95" />
+          <circle cx="94" cy="76" r="3" fill="#FFFFFF" opacity="0.95" />
+          <circle cx="50" cy="82" r="1.2" fill="#FFFFFF" opacity="0.6" />
+
           {/* eyelids */}
-          <ellipse className="ca-eyelid" cx="44" cy="72" rx="12" ry="13" fill="#F5C99A" />
-          <ellipse className="ca-eyelid ca-eyelid-r" cx="76" cy="72" rx="12" ry="13" fill="#F5C99A" />
-          {/* nose */}
-          <ellipse cx="60" cy="84" rx="5" ry="4" fill="#E8A87C" />
+          <ellipse className="ca-eyelid" cx="50" cy="78" rx="15" ry="16" fill="url(#ethan-skin)" />
+          <ellipse className="ca-eyelid ca-eyelid-r" cx="90" cy="78" rx="15" ry="16" fill="url(#ethan-skin)" />
+
+          {/* nose — round 3D */}
+          <ellipse cx="70" cy="92" rx="7" ry="6" fill="#E8A87C" />
+          <ellipse cx="68" cy="90" rx="3" ry="2" fill="#FFFFFF" opacity="0.35" />
+
           {/* mouth */}
-          <g className={mouthClass} transform="translate(60, 96)">
+          <g className={mouthClass} transform="translate(70, 106)">
             {grumpy && !agentSpeaking ? (
-              <path d="M-12 0 Q0 -6 12 0" stroke="#8B4513" strokeWidth="3" strokeLinecap="round" fill="none" />
+              <path d="M-14 0 Q0 -8 14 0" stroke="#A0522D" strokeWidth="3.5" strokeLinecap="round" fill="none" />
             ) : soft && !agentSpeaking ? (
-              <path d="M-12 2 Q0 12 12 2" stroke="#8B4513" strokeWidth="3" strokeLinecap="round" fill="none" />
+              <path d="M-14 3 Q0 14 14 3" stroke="#A0522D" strokeWidth="3.5" strokeLinecap="round" fill="none" />
             ) : (
-              <ellipse cx="0" cy="0" rx="13" ry="5" fill="#8B4513" />
+              <>
+                <ellipse cx="0" cy="2" rx="14" ry="7" fill="#6D2B1A" />
+                <ellipse cx="0" cy="0" rx="12" ry="4" fill="#C0392B" />
+              </>
             )}
           </g>
+
+          {/* hair front strands */}
+          <path d="M20 50 Q30 32 44 38 M96 38 Q110 32 120 50" stroke="#2A2A2A" strokeWidth="4" strokeLinecap="round" />
+          <path d="M70 12 Q58 22 52 36 M70 12 Q82 22 88 36" stroke="#4A4A4A" strokeWidth="3" strokeLinecap="round" />
         </svg>
       </>
     );
   }
 
-  // Jordan — performance / tired office worker
+  // Jordan — 3D tired office worker
   const tense = turnIndex < 3;
   return (
     <>
-      <style>{`
-        .ca-svg { width: 100%; max-width: 160px; height: auto; display: block; }
-        .ca-eyelid { transform-origin: center; transform-box: fill-box; animation: caBlink 3s infinite; }
-        .ca-eyelid-r { animation-delay: 0.05s; }
-        @keyframes caBlink {
-          0%, 96%, 100% { transform: scaleY(0); }
-          98% { transform: scaleY(1); }
-        }
-        .ca-mouth { transform-origin: center; transform-box: fill-box; }
-        .ca-mouth-talk { animation: caMouthTalk 0.32s ease-in-out infinite; }
-        @keyframes caMouthTalk {
-          0%, 100% { transform: scaleY(0.35); }
-          50% { transform: scaleY(1.1); }
-        }
-      `}</style>
-      <svg className="ca-svg" viewBox="0 0 120 140" fill="none" xmlns="http://www.w3.org/2000/svg">
-        {/* collared shirt */}
-        <path d="M18 115 L42 100 L60 108 L78 100 L102 115 L108 140 L12 140 Z" fill="#3D4F5F" />
-        <path d="M42 100 L60 108 L78 100" stroke="#2C3A47" strokeWidth="2" fill="none" />
-        <path d="M60 108 L60 140" stroke="#2C3A47" strokeWidth="1.5" />
+      <style>{CA_STYLES}</style>
+      <svg className="ca-svg" viewBox="0 0 140 160" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <defs>
+          <radialGradient id="jordan-skin" cx="42%" cy="32%" r="68%">
+            <stop offset="0%" stopColor="#F5DFC8" />
+            <stop offset="55%" stopColor="#E8C4A8" />
+            <stop offset="100%" stopColor="#C9A07A" />
+          </radialGradient>
+          <linearGradient id="jordan-shirt" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stopColor="#5C7A8F" />
+            <stop offset="100%" stopColor="#2C3E50" />
+          </linearGradient>
+          <linearGradient id="jordan-collar" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stopColor="#ECF0F1" />
+            <stop offset="100%" stopColor="#BDC3C7" />
+          </linearGradient>
+          <radialGradient id="jordan-hair" cx="50%" cy="28%" r="72%">
+            <stop offset="0%" stopColor="#6D4C41" />
+            <stop offset="100%" stopColor="#2C1810" />
+          </radialGradient>
+          <radialGradient id="jordan-eye" cx="40%" cy="35%" r="60%">
+            <stop offset="0%" stopColor="#FFFFFF" />
+            <stop offset="100%" stopColor="#D5D5D5" />
+          </radialGradient>
+          <filter id="jordan-soft" x="-20%" y="-20%" width="140%" height="140%">
+            <feDropShadow dx="0" dy="3" stdDeviation="3" floodColor="#000" floodOpacity="0.35" />
+          </filter>
+        </defs>
+
+        {/* shoulders / shirt */}
+        <path d="M16 122 L48 108 L70 116 L92 108 L124 122 L130 160 L10 160 Z" fill="url(#jordan-shirt)" filter="url(#jordan-soft)" />
+        <path d="M48 108 L70 116 L92 108 L88 160 L52 160 Z" fill="#34495E" opacity="0.5" />
+        {/* collar */}
+        <path d="M48 108 L70 118 L92 108 L86 128 L70 122 L54 128 Z" fill="url(#jordan-collar)" />
+        <path d="M70 118 L70 160" stroke="#BDC3C7" strokeWidth="2" />
+        {/* tie */}
+        <path d="M70 118 L64 160 L70 154 L76 160 Z" fill="#C0392B" />
+        <path d="M70 118 L66 130 L70 126 L74 130 Z" fill="#E74C3C" />
+
         {/* neck */}
-        <rect x="48" y="102" width="24" height="16" fill="#E8C4A8" />
-        {/* hair — short */}
-        <ellipse cx="60" cy="48" rx="34" ry="28" fill="#4A3728" />
-        <path d="M28 52 Q30 28 60 26 Q90 28 92 52" fill="#4A3728" />
-        {/* face — oval */}
-        <ellipse cx="60" cy="72" rx="32" ry="36" fill="#E8C4A8" />
-        {/* bags under eyes */}
-        <ellipse cx="44" cy="80" rx="10" ry="5" fill="#C9A882" opacity="0.7" />
-        <ellipse cx="76" cy="80" rx="10" ry="5" fill="#C9A882" opacity="0.7" />
-        {/* worried eyebrows */}
-        <path d={tense ? "M32 56 L48 62" : "M34 58 L50 58"} stroke="#4A3728" strokeWidth="3" strokeLinecap="round" fill="none" />
-        <path d={tense ? "M88 56 L72 62" : "M86 58 L70 58"} stroke="#4A3728" strokeWidth="3" strokeLinecap="round" fill="none" />
-        {/* eyes — tired */}
-        <ellipse cx="44" cy="72" rx="9" ry="10" fill="#FFFFFF" />
-        <ellipse cx="76" cy="72" rx="9" ry="10" fill="#FFFFFF" />
-        <circle cx="45" cy="74" r="5" fill="#2C1810" />
-        <circle cx="77" cy="74" r="5" fill="#2C1810" />
+        <rect x="56" y="108" width="28" height="18" rx="4" fill="url(#jordan-skin)" />
+
+        {/* hair */}
+        <ellipse cx="70" cy="50" rx="38" ry="32" fill="url(#jordan-hair)" />
+        <path d="M34 56 Q36 26 70 22 Q104 26 106 56" fill="url(#jordan-hair)" />
+        <ellipse cx="55" cy="30" rx="12" ry="6" fill="#8D6E63" opacity="0.3" />
+
+        {/* face */}
+        <ellipse cx="70" cy="76" rx="36" ry="40" fill="url(#jordan-skin)" filter="url(#jordan-soft)" />
+        <ellipse cx="58" cy="56" rx="14" ry="8" fill="#FFFFFF" opacity="0.18" />
+
+        {/* under-eye bags */}
+        <ellipse cx="50" cy="86" rx="12" ry="6" fill="#B8956F" opacity="0.55" />
+        <ellipse cx="90" cy="86" rx="12" ry="6" fill="#B8956F" opacity="0.55" />
+        <path d="M38 84 Q50 90 62 84" stroke="#A08060" strokeWidth="1.5" fill="none" opacity="0.6" />
+        <path d="M78 84 Q90 90 102 84" stroke="#A08060" strokeWidth="1.5" fill="none" opacity="0.6" />
+
+        {/* eyebrows */}
+        <path d={tense ? "M36 60 L54 68" : "M38 62 L56 62"} stroke="#3E2723" strokeWidth="3.5" strokeLinecap="round" fill="none" />
+        <path d={tense ? "M104 60 L86 68" : "M102 62 L84 62"} stroke="#3E2723" strokeWidth="3.5" strokeLinecap="round" fill="none" />
+
+        {/* eyes */}
+        <ellipse cx="50" cy="76" rx="11" ry="12" fill="url(#jordan-eye)" />
+        <ellipse cx="90" cy="76" rx="11" ry="12" fill="url(#jordan-eye)" />
+        <circle cx="51" cy="78" r="5.5" fill="#1A0A00" />
+        <circle cx="91" cy="78" r="5.5" fill="#1A0A00" />
+        <circle cx="53" cy="75" r="2" fill="#FFFFFF" opacity="0.9" />
+        <circle cx="93" cy="75" r="2" fill="#FFFFFF" opacity="0.9" />
+
         {/* eyelids */}
-        <ellipse className="ca-eyelid" cx="44" cy="72" rx="10" ry="11" fill="#E8C4A8" />
-        <ellipse className="ca-eyelid ca-eyelid-r" cx="76" cy="72" rx="10" ry="11" fill="#E8C4A8" />
-        {/* nervous sweat */}
-        {tense && <path d="M98 58 Q100 64 96 68 Q102 64 98 58Z" fill="#7EB8DA" opacity="0.8" />}
-        {/* mouth — tense line or talking */}
-        <g className={mouthClass} transform="translate(60, 94)">
+        <ellipse className="ca-eyelid" cx="50" cy="76" rx="12" ry="13" fill="url(#jordan-skin)" />
+        <ellipse className="ca-eyelid ca-eyelid-r" cx="90" cy="76" rx="12" ry="13" fill="url(#jordan-skin)" />
+
+        {/* sweat drop */}
+        {tense && (
+          <g opacity="0.85">
+            <path d="M108 54 Q112 62 106 68 Q114 62 108 54Z" fill="#85C1E9" />
+            <ellipse cx="109" cy="58" rx="2" ry="3" fill="#FFFFFF" opacity="0.5" />
+          </g>
+        )}
+
+        {/* mouth */}
+        <g className={mouthClass} transform="translate(70, 98)">
           {tense && !agentSpeaking ? (
-            <path d="M-10 0 L10 0" stroke="#8B6914" strokeWidth="2.5" strokeLinecap="round" />
+            <path d="M-11 0 L11 0" stroke="#8B6914" strokeWidth="3" strokeLinecap="round" />
           ) : !agentSpeaking ? (
-            <path d="M-10 2 Q0 8 10 2" stroke="#8B6914" strokeWidth="2.5" strokeLinecap="round" fill="none" />
+            <path d="M-11 2 Q0 10 11 2" stroke="#8B6914" strokeWidth="3" strokeLinecap="round" fill="none" />
           ) : (
-            <ellipse cx="0" cy="0" rx="11" ry="5" fill="#8B6914" />
+            <>
+              <ellipse cx="0" cy="2" rx="12" ry="6" fill="#5D4037" />
+              <ellipse cx="0" cy="0" rx="10" ry="3.5" fill="#C0392B" opacity="0.8" />
+            </>
           )}
         </g>
       </svg>
