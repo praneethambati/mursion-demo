@@ -212,8 +212,21 @@ const speak = (text, onEnd) => {
   const voices = window.speechSynthesis.getVoices();
   const pick = voices.find(v => v.lang === "en-US") || voices[0];
   if (pick) u.voice = pick;
-  u.onend = onEnd;
+
+  let done = false;
+  const finish = () => {
+    if (done) return;
+    done = true;
+    clearInterval(poll);
+    onEnd?.();
+  };
+  u.onend = finish;
+  u.onerror = finish;
   window.speechSynthesis.speak(u);
+  // Chrome often never fires onend — poll instead
+  const poll = setInterval(() => {
+    if (!window.speechSynthesis.speaking && !window.speechSynthesis.pending) finish();
+  }, 200);
 };
 
 // All API calls go through our own serverless proxy — key stays server-side
@@ -223,8 +236,8 @@ const callClaude = async (body) => {
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(body),
   });
-  if (!res.ok) throw new Error(`API error ${res.status}`);
   const data = await res.json();
+  if (!res.ok) throw new Error(data.error?.message || data.error || `API error ${res.status}`);
   return data.content?.map(b => b.text || "").join("") || "";
 };
 
@@ -299,6 +312,7 @@ export default function SimulationRoom() {
   const [ending, setEnding]           = useState(false);
   const [generating, setGenerating]   = useState(false);
   const [errorMsg, setErrorMsg]       = useState("");
+  const [processing, setProcessing]   = useState(false);
 
   const videoRef   = useRef(null);
   const canvasRef  = useRef(null);
@@ -308,16 +322,22 @@ export default function SimulationRoom() {
   const emotionRef = useRef(null);
   const convRef    = useRef([]);
   const scrollRef  = useRef(null);
+  const expectingUserRef = useRef(false);
+  const submittingRef    = useRef(false);
+  const submitTurnRef    = useRef(null);
 
-  // detect speech support once on mount
+  // detect speech support once on mount + preload TTS voices (Chrome)
   useEffect(() => {
     if (!hasSpeechRecognition()) setTypingMode(true);
+    const load = () => window.speechSynthesis.getVoices();
+    load();
+    window.speechSynthesis.onvoiceschanged = load;
   }, []);
 
   // ── Camera ─────────────────────────────────────────────────────────────────
   const startCamera = useCallback(async () => {
     try {
-      const stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
+      const stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: false });
       streamRef.current = stream;
       if (videoRef.current) videoRef.current.srcObject = stream;
     } catch {
@@ -356,15 +376,36 @@ export default function SimulationRoom() {
 
   // ── Speech recognition ─────────────────────────────────────────────────────
   const startListening = useCallback(() => {
+    expectingUserRef.current = true;
+    setUserSpeech("");
     if (typingMode) { setListening(true); return; }
     const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
     if (!SR) { setTypingMode(true); setListening(true); return; }
     try {
       const r = new SR();
-      r.continuous = false; r.interimResults = true; r.lang = "en-US";
-      r.onresult = e => setUserSpeech(Array.from(e.results).map(x => x[0].transcript).join(""));
-      r.onerror = () => { setTypingMode(true); };
-      r.onend = () => setListening(false);
+      r.continuous = true;
+      r.interimResults = true;
+      r.lang = "en-US";
+      r.onresult = e => {
+        const transcript = Array.from(e.results).map(x => x[0].transcript).join("");
+        setUserSpeech(transcript);
+        const last = e.results[e.results.length - 1];
+        if (last?.isFinal && transcript.trim()) {
+          submitTurnRef.current?.(transcript);
+        }
+      };
+      r.onerror = (e) => {
+        if (e.error === "no-speech" || e.error === "aborted") return;
+        setTypingMode(true);
+        setListening(true);
+      };
+      r.onend = () => {
+        if (expectingUserRef.current && !submittingRef.current) {
+          try { r.start(); } catch { setListening(false); }
+        } else {
+          setListening(false);
+        }
+      };
       r.start();
       recognRef.current = r;
       setListening(true);
@@ -403,19 +444,30 @@ export default function SimulationRoom() {
   }, [startListening]);
 
   // ── Submit turn ────────────────────────────────────────────────────────────
-  const submitTurn = useCallback(async () => {
-    if (!userSpeech.trim() || !scenario) return;
+  const submitTurn = useCallback(async (overrideText) => {
+    const text = (overrideText ?? userSpeech).trim();
+    if (!text || !scenario || submittingRef.current) return;
+    submittingRef.current = true;
+    expectingUserRef.current = false;
     recognRef.current?.stop();
-    const text = userSpeech;
-    setUserSpeech(""); setListening(false);
+    setUserSpeech("");
+    setListening(false);
+    setProcessing(true);
     setTranscript(prev => [...prev, { speaker: "You", text, isAgent: false }]);
     convRef.current = [...convRef.current, { speaker: "You", text }];
-    await evaluateTurn(text, scenario);
-    const next = turnIndex + 1;
-    setTurnIndex(next);
-    if (next >= scenario.turns.length) setTimeout(() => endSession(), 1400);
-    else setTimeout(() => agentRespond(scenario, next), 700);
+    try {
+      await evaluateTurn(text, scenario);
+      const next = turnIndex + 1;
+      setTurnIndex(next);
+      if (next >= scenario.turns.length) setTimeout(() => endSession(), 1400);
+      else setTimeout(() => agentRespond(scenario, next), 700);
+    } finally {
+      setProcessing(false);
+      submittingRef.current = false;
+    }
   }, [userSpeech, scenario, turnIndex, evaluateTurn, agentRespond]);
+
+  submitTurnRef.current = submitTurn;
 
   // ── End session ────────────────────────────────────────────────────────────
   const endSession = useCallback(async () => {
@@ -682,8 +734,8 @@ export default function SimulationRoom() {
         </div>
 
         {/* Speech / type input */}
-        <div style={{ background: T.surface, border: `1px solid ${listening ? T.borderHi : T.border}`, borderRadius: 10, padding: "13px 15px", transition: "border-color 0.25s" }}>
-          {listening ? (
+        <div style={{ background: T.surface, border: `1px solid ${listening || userSpeech.trim() ? T.borderHi : T.border}`, borderRadius: 10, padding: "13px 15px", transition: "border-color 0.25s" }}>
+          {listening || userSpeech.trim() ? (
             <div style={{ display: "flex", flexDirection: "column", gap: 9 }}>
               <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
                 <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
@@ -720,6 +772,11 @@ export default function SimulationRoom() {
                     {userSpeech || "Speak now — your response will be evaluated…"}
                   </div>
               }
+            </div>
+          ) : processing ? (
+            <div style={{ display: "flex", alignItems: "center", gap: 7, color: T.textSec, fontSize: 12 }}>
+              <Activity size={11} color={T.textSec} style={{ animation: "blink 1s infinite" }} />
+              Evaluating your response…
             </div>
           ) : (
             <div style={{ display: "flex", alignItems: "center", gap: 7, color: T.textMut, fontSize: 12 }}>
