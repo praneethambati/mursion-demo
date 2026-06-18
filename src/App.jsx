@@ -4,7 +4,7 @@ import {
   BarChart2, User, Users, BookOpen, TrendingUp, Award,
   Zap, AlertCircle, CheckCircle, Target, ChevronRight,
   Radio, LogOut, RotateCcw, Play, FileText, Layers,
-  Keyboard, WifiOff
+  Keyboard, WifiOff, Download
 } from "lucide-react";
 import { RadarChart, PolarGrid, PolarAngleAxis, Radar, ResponsiveContainer } from "recharts";
 
@@ -384,6 +384,106 @@ const callClaude = async (body) => {
 };
 
 const fmt = s => `${String(Math.floor(s / 60)).padStart(2, "0")}:${String(s % 60).padStart(2, "0")}`;
+
+const escHtml = s => String(s)
+  .replace(/&/g, "&amp;")
+  .replace(/</g, "&lt;")
+  .replace(/>/g, "&gt;")
+  .replace(/"/g, "&quot;");
+
+const buildReportHtml = (report, scenario, duration, transcript) => {
+  const scoreRows = Object.entries(report.scores)
+    .map(([k, v]) => `<tr><td>${escHtml(k.replace(/_/g, " "))}</td><td>${v}</td></tr>`)
+    .join("");
+  const strengths = report.strengths.map(s => `<li>${escHtml(s)}</li>`).join("");
+  const improvements = report.improvements.map(s => `<li>${escHtml(s)}</li>`).join("");
+  const turns = transcript.map(t =>
+    `<div class="turn"><div class="speaker">${escHtml(t.speaker)}</div><p>${escHtml(t.text)}</p></div>`
+  ).join("");
+
+  return `<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>SimEval Report — ${escHtml(scenario?.title || "Simulation")}</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: Inter, system-ui, sans-serif; background: #f4f4f4; color: #111; line-height: 1.6; padding: 40px 24px; }
+    .page { max-width: 720px; margin: 0 auto; background: #fff; border: 1px solid #e0e0e0; border-radius: 12px; padding: 36px; }
+    h1 { font-size: 24px; margin-bottom: 4px; }
+    .meta { color: #666; font-size: 13px; margin-bottom: 28px; }
+    .grid { display: grid; grid-template-columns: 1fr 1fr 2fr; gap: 12px; margin-bottom: 20px; }
+    .card { border: 1px solid #e0e0e0; border-radius: 10px; padding: 18px; }
+    .label { font-size: 10px; text-transform: uppercase; letter-spacing: 0.12em; color: #888; margin-bottom: 8px; }
+    .big { font-family: "JetBrains Mono", monospace; font-size: 42px; font-weight: 600; text-align: center; }
+    .summary { font-size: 14px; color: #444; }
+    h2 { font-size: 11px; text-transform: uppercase; letter-spacing: 0.14em; color: #888; margin: 24px 0 12px; }
+    table { width: 100%; border-collapse: collapse; font-size: 14px; }
+    td { padding: 8px 0; border-bottom: 1px solid #eee; }
+    td:last-child { text-align: right; font-family: "JetBrains Mono", monospace; font-weight: 600; }
+    ul { padding-left: 18px; font-size: 14px; color: #444; }
+    li { margin-bottom: 8px; }
+    .quote { border-left: 3px solid #111; padding: 12px 16px; font-style: italic; color: #444; background: #fafafa; border-radius: 0 8px 8px 0; }
+    .focus { font-size: 16px; font-weight: 500; }
+    .turn { margin-bottom: 14px; padding-bottom: 14px; border-bottom: 1px solid #eee; }
+    .speaker { font-size: 10px; text-transform: uppercase; letter-spacing: 0.1em; color: #888; margin-bottom: 4px; }
+    .turn p { font-size: 14px; color: #222; }
+    .footer { margin-top: 32px; font-size: 11px; color: #aaa; text-align: center; }
+    @media print {
+      body { background: #fff; padding: 0; }
+      .page { border: none; border-radius: 0; padding: 0; max-width: none; }
+    }
+    @media (max-width: 640px) { .grid { grid-template-columns: 1fr; } }
+  </style>
+</head>
+<body>
+  <div class="page">
+    <h1>Performance Report</h1>
+    <div class="meta">${escHtml(scenario?.title || "Simulation")} · Duration ${fmt(duration)} · Generated ${new Date().toLocaleString()}</div>
+
+    <div class="grid">
+      <div class="card"><div class="label">Score</div><div class="big">${report.overall}</div></div>
+      <div class="card"><div class="label">Grade</div><div class="big">${escHtml(report.grade)}</div></div>
+      <div class="card"><div class="label">Assessment</div><div class="summary">${escHtml(report.summary)}</div></div>
+    </div>
+
+    <h2>Skill breakdown</h2>
+    <table><tbody>${scoreRows}</tbody></table>
+
+    <h2>Strengths</h2>
+    <ul>${strengths}</ul>
+
+    <h2>To develop</h2>
+    <ul>${improvements}</ul>
+
+    <h2>Best moment</h2>
+    <div class="quote">${escHtml(report.highlight_quote)}</div>
+
+    <h2>Next session focus</h2>
+    <p class="focus">${escHtml(report.next_focus)}</p>
+
+    ${turns ? `<h2>Transcript</h2>${turns}` : ""}
+
+    <div class="footer">SimEval · Mursion AI Evaluation</div>
+  </div>
+</body>
+</html>`;
+};
+
+const downloadReport = (report, scenario, duration, transcript) => {
+  const html = buildReportHtml(report, scenario, duration, transcript);
+  const blob = new Blob([html], { type: "text/html;charset=utf-8" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  const slug = (scenario?.title || "simulation").toLowerCase().replace(/[^a-z0-9]+/g, "-");
+  a.href = url;
+  a.download = `simeval-report-${slug}-${new Date().toISOString().slice(0, 10)}.html`;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+};
 
 const hasSpeechRecognition = () =>
   typeof window !== "undefined" && !!(window.SpeechRecognition || window.webkitSpeechRecognition);
@@ -1024,19 +1124,19 @@ export default function SimulationRoom() {
           </div>
 
           <div className="report-scorerow" style={{ display: "grid", gridTemplateColumns: "1fr 1fr 2fr", gap: 12, marginBottom: 14 }}>
-            <div style={{ background: T.surface, border: `1px solid ${T.border}`, borderRadius: 12, padding: "22px 18px", textAlign: "center" }}>
-              <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 5, marginBottom: 5 }}>
+            <div style={{ background: T.surface, border: `1px solid ${T.border}`, borderRadius: 12, padding: "22px 18px", textAlign: "center", display: "flex", flexDirection: "column", height: "100%" }}>
+              <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 5, marginBottom: 5, flexShrink: 0 }}>
                 <Activity size={10} color={T.textMut} />
                 <span style={{ fontSize: 9, color: T.textMut, textTransform: "uppercase", letterSpacing: "0.14em" }}>Score</span>
               </div>
-              <div style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 52, fontWeight: 600, color: T.textPri, lineHeight: 1 }}>{finalReport.overall}</div>
+              <div style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", fontFamily: "'JetBrains Mono', monospace", fontSize: 52, fontWeight: 600, color: T.textPri, lineHeight: 1 }}>{finalReport.overall}</div>
             </div>
-            <div style={{ background: T.surface, border: `1px solid ${T.border}`, borderRadius: 12, padding: "22px 18px", textAlign: "center" }}>
-              <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 5, marginBottom: 5 }}>
+            <div style={{ background: T.surface, border: `1px solid ${T.border}`, borderRadius: 12, padding: "22px 18px", textAlign: "center", display: "flex", flexDirection: "column", height: "100%" }}>
+              <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 5, marginBottom: 5, flexShrink: 0 }}>
                 <Award size={10} color={T.textMut} />
                 <span style={{ fontSize: 9, color: T.textMut, textTransform: "uppercase", letterSpacing: "0.14em" }}>Grade</span>
               </div>
-              <div style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 52, fontWeight: 600, color: T.textPri, lineHeight: 1 }}>{finalReport.grade}</div>
+              <div style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", fontFamily: "'JetBrains Mono', monospace", fontSize: 52, fontWeight: 600, color: T.textPri, lineHeight: 1 }}>{finalReport.grade}</div>
             </div>
             <div className="report-summary" style={{ background: T.surface, border: `1px solid ${T.border}`, borderRadius: 12, padding: "22px 18px" }}>
               <div style={{ display: "flex", alignItems: "center", gap: 5, marginBottom: 9 }}>
@@ -1107,8 +1207,14 @@ export default function SimulationRoom() {
             <div style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 15, fontWeight: 500, color: T.textPri, lineHeight: 1.5 }}>{finalReport.next_focus}</div>
           </div>
 
-          <div className="report-actions" style={{ display: "flex", gap: 10, justifyContent: "center" }}>
-            <button onClick={() => { setScreen("lobby"); setFinalReport(null); setEnding(false); setSimActive(false); }} style={{ display: "flex", alignItems: "center", gap: 7, padding: "11px 22px", borderRadius: 9, background: T.white, border: "none", color: T.bg, fontSize: 13, fontWeight: 600, fontFamily: "'DM Sans', sans-serif", cursor: "pointer" }}>
+          <div className="report-actions" style={{ display: "flex", gap: 10, justifyContent: "center", flexWrap: "wrap" }}>
+            <button onClick={() => downloadReport(finalReport, scenario, elapsed, transcript)} style={{ display: "flex", alignItems: "center", gap: 7, padding: "11px 22px", borderRadius: 9, background: T.white, border: "none", color: T.bg, fontSize: 13, fontWeight: 600, fontFamily: "'DM Sans', sans-serif", cursor: "pointer" }}>
+              <Download size={13} /> Download report
+            </button>
+            <button onClick={() => { setScreen("lobby"); setFinalReport(null); setEnding(false); setSimActive(false); }} style={{ display: "flex", alignItems: "center", gap: 7, padding: "11px 22px", borderRadius: 9, background: "transparent", border: `1px solid ${T.border}`, color: T.textSec, fontSize: 13, fontWeight: 500, fontFamily: "'DM Sans', sans-serif", cursor: "pointer" }}
+              onMouseEnter={e => { e.currentTarget.style.borderColor = T.borderHi; e.currentTarget.style.color = T.textPri; }}
+              onMouseLeave={e => { e.currentTarget.style.borderColor = T.border; e.currentTarget.style.color = T.textSec; }}
+            >
               <Play size={13} /> New simulation
             </button>
             <button onClick={() => startSession(scenario)} style={{ display: "flex", alignItems: "center", gap: 7, padding: "11px 22px", borderRadius: 9, background: "transparent", border: `1px solid ${T.border}`, color: T.textSec, fontSize: 13, fontWeight: 500, fontFamily: "'DM Sans', sans-serif", cursor: "pointer" }}
