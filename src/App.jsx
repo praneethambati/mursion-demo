@@ -7,6 +7,7 @@ import {
   Keyboard, WifiOff, Download
 } from "lucide-react";
 import { RadarChart, PolarGrid, PolarAngleAxis, Radar, ResponsiveContainer } from "recharts";
+import { Analytics } from "@vercel/analytics/react";
 
 // ── Design tokens ──────────────────────────────────────────────────────────────
 const T = {
@@ -533,7 +534,7 @@ export default function SimulationRoom() {
     } catch { setTypingMode(true); setListening(true); }
   }, [typingMode, clearSilenceTimer, scheduleAutoSubmit]);
 
-  // ── Evaluate turn ──────────────────────────────────────────────────────────
+  // ��─ Evaluate turn ────────────���─────────────────────────────────────────────
   const evaluateTurn = useCallback(async (text, sc) => {
     const history = convRef.current.map(t => `${t.speaker}: ${t.text}`).join("\n");
     try {
@@ -644,14 +645,20 @@ export default function SimulationRoom() {
     window.speechSynthesis.cancel();
   }, [stopCamera, clearSilenceTimer]);
 
-  if (generating) return <GeneratingOverlay />;
+  if (generating) return (
+    <>
+      <GeneratingOverlay />
+      <Analytics />
+    </>
+  );
 
   // ══════════════════════════════════════════════════════════════════════════
   // LOBBY
   // ══════════════════════════════════════════════════════════════════════════
   if (screen === "lobby") return (
-    <div style={{ minHeight: "100vh", background: T.bg, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: 32, fontFamily: "Inter, sans-serif" }}>
-      <style>{GLOBAL_CSS}</style>
+    <>
+      <div style={{ minHeight: "100vh", background: T.bg, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: 32, fontFamily: "Inter, sans-serif" }}>
+        <style>{GLOBAL_CSS}</style>
 
       <div style={{ display: "flex", alignItems: "center", gap: 11, marginBottom: 56, animation: "fadeUp 0.5s ease" }}>
         <div style={{ width: 36, height: 36, borderRadius: 8, background: T.white, display: "flex", alignItems: "center", justifyContent: "center" }}>
@@ -718,12 +725,15 @@ export default function SimulationRoom() {
         ))}
       </div>
     </div>
-  );
+    <Analytics />
+  </>
+);
 
-  // ══════════════════════════════════════════════════════════════════════════
-  // SIMULATION ROOM
-  // ══════════════════════════════════════════════════════════════════════════
-  if (screen === "sim") return (
+// ══════════════════════════════════════════════════════════════════════════
+// SIMULATION ROOM
+// ══════════════════════════════════════════════════════════════════════════
+if (screen === "sim") return (
+  <>
     <div className="sim-grid" style={{ height: "100vh", background: T.bg, display: "grid", gridTemplateColumns: "216px 1fr 260px", fontFamily: "Inter, sans-serif", overflow: "hidden" }}>
       <style>{GLOBAL_CSS}</style>
 
@@ -966,14 +976,17 @@ export default function SimulationRoom() {
         )}
       </div>
     </div>
-  );
+    <Analytics />
+  </>
+);
 
-  // ══════════════════════════════════════════════════════════════════════════
-  // REPORT
-  // ══════════════════════════════════════════════════════════════════════════
-  if (screen === "report" && finalReport) {
-    const reportRadar = Object.entries(finalReport.scores).map(([k, v]) => ({ subject: k.replace(/_/g, " "), value: v }));
-    return (
+// ══════════════════════════════════════════════════════════════════════════
+// REPORT
+// ══════════════════════════════════════════════════════════════════════════
+if (screen === "report" && finalReport) {
+  const reportRadar = Object.entries(finalReport.scores).map(([k, v]) => ({ subject: k.replace(/_/g, " "), value: v }));
+  return (
+    <>
       <div style={{ minHeight: "100vh", background: T.bg, display: "flex", flexDirection: "column", alignItems: "center", padding: "48px 24px", fontFamily: "Inter, sans-serif" }}>
         <style>{GLOBAL_CSS}</style>
 
@@ -1091,8 +1104,10 @@ export default function SimulationRoom() {
           </div>
         </div>
       </div>
-    );
-  }
+      <Analytics />
+    </>
+  );
+}
 
-  return null;
+return null;
 }
